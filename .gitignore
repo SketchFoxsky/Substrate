@@ -361,3 +361,5 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+Substrate/Substrate/Local.VS.props
+Substrate/ZZCakeBuild/Local.VS.props

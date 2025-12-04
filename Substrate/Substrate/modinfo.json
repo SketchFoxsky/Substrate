@@ -3,10 +3,10 @@
     "modid": "substrate",
     "name": "Substrate",
     "authors": [
-        "willis81808"
+        "Willis81808, SketchFoxsky"
     ],
     "description": "To be added",
-    "version": "1.1.1",
+    "version": "1.1.5",
     "dependencies": {
         "game": ""
     }

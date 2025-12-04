@@ -1,0 +1,14 @@
+<Project>
+  <!--
+    Directory.Build.props is automatically imported by MSBuild before .csproj.
+    We define VINTAGE_STORY here, and allow users to override it with Local.VS.props
+  -->
+
+  <PropertyGroup>
+    <!-- Default fallback -->
+    <VINTAGE_STORY>$(MSBuildThisFileDirectory)</VINTAGE_STORY>
+  </PropertyGroup>
+
+  <!-- Optional per-user override file (NOT committed to Git) -->
+  <Import Project="Local.VS.props" Condition="Exists('Local.VS.props')" />
+</Project>

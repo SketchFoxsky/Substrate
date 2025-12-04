@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using HarmonyLib;
 using Substrate.Behaviors;
@@ -21,12 +22,23 @@ namespace Substrate
 {
     public class SubstrateModSystem : ModSystem
     {
+        private const string ConfigFileName = "substrateconfig.json";
+
         internal static ILogger Logger { get; private set; }
+
+        /// <summary>
+        /// Active configuration for the Substrate mod.
+        /// Loaded on the server, defaults used if no file exists.
+        /// </summary>
+        internal static SubstrateConfig Config { get; private set; } = new SubstrateConfig();
+
+        #region Lifecycle
 
         // Called on server and client
         // Useful for registering block/entity classes on both sides
         public override void Start(ICoreAPI api)
         {
+            // Register blocks / block entities
             api.RegisterBlockClass("BlockFruitingBag", typeof(BlockFruitingBag));
             api.RegisterBlockClass("BlockGrowBed", typeof(BlockGrowBed));
             api.RegisterBlockEntityClass("FruitingBag", typeof(BlockEntityFruitingBag));
@@ -34,16 +46,24 @@ namespace Substrate
             api.RegisterBlockClass("BlockSporePaper", typeof(BlockSporePaper));
             api.RegisterBlockEntityClass("SporePaper", typeof(BlockEntitySporePaper));
 
+            // Behaviors
             api.RegisterCollectibleBehaviorClass("UseInventoryShape", typeof(BehaviorShapeInventory));
             api.RegisterBlockBehaviorClass("BehaviorMushroomGrower", typeof(BehaviorMushroomGrower));
 
+            // Harmony patches
             var harmony = new Harmony(Mod.Info.ModID);
             harmony.PatchAll(typeof(SubstrateModSystem).Assembly);
+
+            // Only the server needs to own the config file (SP server included)
+            if (api.Side == EnumAppSide.Server)
+            {
+                LoadOrCreateConfig(api);
+            }
         }
 
         public override void AssetsFinalize(ICoreAPI api)
         {
-            // Add UseInventoryShape behavior to all spore harvestable mushrooms
+            // Add UseInventoryShape behavior to all spore-harvestable mushrooms
             foreach (var obj in api.World.Collectibles)
             {
                 if (obj == null || obj.Code == null) continue;
@@ -64,5 +84,37 @@ namespace Substrate
         {
             Logger = Mod.Logger;
         }
+
+        #endregion
+
+        #region Config
+
+        private static void LoadOrCreateConfig(ICoreAPI api)
+        {
+            try
+            {
+                var loaded = api.LoadModConfig<SubstrateConfig>(ConfigFileName);
+                if (loaded != null)
+                {
+                    Config = loaded;
+                }
+                else
+                {
+                    // No file yet, create with defaults
+                    Config = new SubstrateConfig();
+                }
+
+                // Write back to ensure the file exists / is updated with new fields
+                api.StoreModConfig(Config, ConfigFileName);
+                Logger?.Notification("[Substrate] Loaded config from {0}", ConfigFileName);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error("[Substrate] Failed to load config {0}: {1}", ConfigFileName, e);
+                Config = new SubstrateConfig();
+            }
+        }
+
+        #endregion
     }
 }
